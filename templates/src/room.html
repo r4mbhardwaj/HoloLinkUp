@@ -5,7 +5,7 @@
 <!-- webrtc peerjs -->
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
-<input id="username">
+<input id="username" value="{{user.username}}">
 
 <input id="conn_id">
 <button id="connect">Connect</button>
@@ -24,6 +24,17 @@
     // show peer id on page
     peer.on('open', function (id) {
         $('#peer_id').text(id);
+        // send peer id to server
+        // current url is /ui/main.py/Room
+        $.ajax({
+            // same url but with /value instead of /ui
+            url: document.URL.replace('/ui', '/value'),
+            type: 'POST',
+            data: {peer_id: id, username: $('#username').val(), csrfmiddlewaretoken: '{{ csrf_token }}'},
+            success: function (data) {
+                console.log(data);
+            }
+        });
     });
     // receive message from other peer
     peer.on('connection', function (conn) {
