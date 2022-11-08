@@ -1,0 +1,7 @@
+<ul>
+    {% for object in response %}
+    <li>{{object}}: {{object.get_data}}
+        <!-- <a href="/ui/main.py/Room?room_name={{object.get_data.room_name}}">join</a> -->
+    </li>
+    {% endfor %}
+</ul>

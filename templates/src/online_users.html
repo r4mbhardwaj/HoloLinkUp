@@ -1,3 +1,10 @@
-{% for object in response %}
-    {{object}}
-{% endfor %}
+<ul>
+    {% for object in response %}
+    <li>
+        <!-- button with data-peer-id -->
+        <button class="btn btn-primary peer_info_button" data-peer-id="{{object.get_data.peer_id}}">{{object.get_data.username}}</button>
+    </li>
+    {% empty %}
+    <li>no online user</li>
+    {% endfor %}
+</ul>

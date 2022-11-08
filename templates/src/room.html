@@ -1,24 +1,38 @@
 <!-- connect two clients to each other using webrtc -->
 <!-- ajax  -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-
 <!-- webrtc peerjs -->
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<div class="">
+    <form>
+        <input name="room_name" type="text" placeholder="room name" value="{{response.room_name}}">
+        <button type="submit">join</button>
+    </form>
+    <p>my peer id: <span id="peer_id"></span></p>
+    <label for="username">Username</label>
+    <input id="username" value="" placeholder="Your Name">
+    <input id="password" placeholder="room password">
+    <button id="join">Join</button>
+    <div id="users">
+    </div>
+    <div id="logs">
+    </div>
+</div>
 
-<input id="username" value="{{user.username}}">
 
-<input id="conn_id">
-<button id="connect">Connect</button>
+<div class="chat">
+    <p>Connect to other user</p>
+    <label for="conn_id">Conn Id</label>
+    <input id="conn_id">
+    <button id="connect">Connect</button>
+    <input type="text" id="message" placeholder="message">
+    <button id="send">send</button>
+</div>
 
 <textarea id="chat" rows="10" cols="50"></textarea>
 
-<p>my peer id: <span id="peer_id"></span></p>
-
-<input type="text" id="message" placeholder="message">
-<button id="send">send</button>
-
-
 <script>
+
     // start webRTC connection
     var peer = new Peer();
     // show peer id on page
@@ -26,20 +40,43 @@
         $('#peer_id').text(id);
         // send peer id to server
         // current url is /ui/main.py/Room
-        $.ajax({
-            // same url but with /value instead of /ui
-            url: document.URL.replace('/ui', '/value'),
-            type: 'POST',
-            data: {peer_id: id, username: $('#username').val(), csrfmiddlewaretoken: '{{ csrf_token }}'},
-            success: function (data) {
-                console.log(data);
-            }
+        // on join button click
+        $('#join').click(function () {
+            var password = $('#password').val();
+            var username = $('#username').val();
+            var room_name = '{{response.room_name}}';
+            var peer_id = $('#peer_id').text();
+            $.ajax({
+                url: '/value/main.py/Peer',
+                data: {
+                    room_name: room_name,
+                    username: username,
+                    password: password,
+                    peer_id: peer_id,
+                    csrfmiddlewaretoken: '{{csrf_token}}'
+                },
+                type: 'post',
+                success: function (response) {
+                    console.log(response);
+                    if (response.status == 'success') {
+                        $('#users').html(response.users);
+                    }
+                    // start looking for online users
+                    look_for_online_users();
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
         });
     });
     // receive message from other peer
     peer.on('connection', function (conn) {
         conn.on('data', function (data) {
-            $('#chat').val($('#chat').val() + data);
+            // show message on page with username
+            $('#chat').val(
+                $('#chat').val() + data.username + ': ' + data.message + '\n'
+            );
         });
     });
 
@@ -49,16 +86,49 @@
         conn = peer.connect($('#conn_id').val());
         conn.on('open', function () {
             // send message when button is clicked
-            $('#send').click(function () {
-                conn.send($('#message').val());
-            });
             console.log('connected to ' + conn.peer);
         });
     });
 
     // send message to other peer
     $('#send').click(function () {
-        conn.send($('#message').val());
-        $('#chat').val($('#chat').val() + $('#message').val());
+        conn.send(
+            {
+                message: $('#message').val(),
+                username: $('#username').val()
+            }
+        );
+        $('#chat').val(
+            $('#chat').val() + $('#username').val() + ': ' + $('#message').val() + "\n"
+        );
+    });
+
+    // look for online users
+    function look_for_online_users() {
+        var room_name = '{{response.room_name}}';
+        $.ajax({
+            url: '/ui/main.py/Online_Users',
+            data: {
+                room_name: room_name,
+            },
+            type: 'get',
+            success: function (response) {
+                console.log(response);
+                $('#users').html(response);
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+
+    // when user clicks on button with class 'peer_info_button' show peer info
+    $(document).on('click', '.peer_info_button', function () {
+        var peer_id_ = $(this).attr('data-peer-id');
+        console.log(peer_id_);
+        // fill input with peer id
+        $('#conn_id').val(peer_id_);
+        // click connect button to connect to peer
+        $('#connect').click();
     });
 </script>
