@@ -1,0 +1,53 @@
+<!-- connect two clients to each other using webrtc -->
+<!-- ajax  -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+<!-- webrtc peerjs -->
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+
+<input id="username">
+
+<input id="conn_id">
+<button id="connect">Connect</button>
+
+<textarea id="chat" rows="10" cols="50"></textarea>
+
+<p>my peer id: <span id="peer_id"></span></p>
+
+<input type="text" id="message" placeholder="message">
+<button id="send">send</button>
+
+
+<script>
+    // start webRTC connection
+    var peer = new Peer();
+    // show peer id on page
+    peer.on('open', function (id) {
+        $('#peer_id').text(id);
+    });
+    // receive message from other peer
+    peer.on('connection', function (conn) {
+        conn.on('data', function (data) {
+            $('#chat').val($('#chat').val() + data);
+        });
+    });
+
+
+    // connect to other peer when button is clicked
+    $('#connect').click(function () {
+        conn = peer.connect($('#conn_id').val());
+        conn.on('open', function () {
+            // send message when button is clicked
+            $('#send').click(function () {
+                conn.send($('#message').val());
+            });
+            console.log('connected to ' + conn.peer);
+        });
+    });
+
+    // send message to other peer
+    $('#send').click(function () {
+        conn.send($('#message').val());
+        $('#chat').val($('#chat').val() + $('#message').val());
+    });
+</script>
